@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Temp</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+
+<body>
+  <div class="app">
+    <h1>Temp</h1>
+    <!-- 사용자 입력창: 도시 이름 입력 -->
+    <input type="text" id="cityInput" placeholder="Enter city name" />
+
+    <!-- 검색 버튼 -->
+    <button id="searchBtn">Search</button>
+
+    <!-- 퀴즈 버튼: 날씨 검색 후 활성화 -->
+    <button id="quizBtn" disabled>Quiz</button>
+
+    <!-- 날씨 정보를 표시할 영역 -->
+    <div id="weather">Enter a city to see the weather.<br>(보고싶은 도시의 날씨를 입력하세요.)</div>
+
+    <!-- 퀴즈를 표시할 영역, 기본은 숨김 -->
+    <div id="quiz" style="display: none;"></div>
+  </div>
+
+  <script>
+    // OpenWeatherMap API 키
+    const API_KEY = '5c9878927f32bdf3781db8c42e4e4f13';
+
+    // 날씨 관련 퀴즈 데이터 배열
+    const quizzes = [
+      {
+        question: "태양계에서 가장 큰 폭풍은 어느 행성에서 발생하나요?",
+        options: ["지구", "목성", "화성"],
+        answer: "목성"
+      },
+      {
+        question: "대기의 주요 구성 요소는 무엇인가요?",
+        options: ["질소와 산소", "이산화탄소", "수소"],
+        answer: "질소와 산소"
+      },
+      {
+        question: "기압이 높아질수록 날씨는 보통 어떻게 되나요?",
+        options: ["흐림", "맑음", "눈"],
+        answer: "맑음"
+      },
+      {
+        question: "가장 높은 온도를 기록한 지구상의 장소는 어디인가요?",
+        options: ["미국의 데스밸리", "사하라 사막", "튀니지의 케빌리"],
+        answer: "미국의 데스밸리"
+      },
+      {
+        question: "번개가 발생할 때 동반되는 소리는 무엇이라고 하나요?",
+        options: ["폭풍", "천둥", "번개음"],
+        answer: "천둥"
+      },
+      {
+        question: "북극의 겨울철 태양이 뜨지 않는 현상을 무엇이라고 하나요?",
+        options: ["백야", "북극성", "극야"],
+        answer: "극야"
+      },
+      {
+        question: "엘니뇨(El Niño)는 주로 어떤 대양에서 발생하나요?",
+        options: ["대서양", "태평양", "인도양"],
+        answer: "태평양"
+      },
+      {
+        question: "비가 내릴 때 가장 많이 떨어지는 물방울 크기는 대략 얼마일까요?",
+        options: ["0.5mm", "2mm", "5mm"],
+        answer: "2mm"
+      },
+      {
+        question: "태풍과 허리케인의 차이점은 무엇인가요?",
+        options: ["강도", "크기", "발생지역"],
+        answer: "발생지역"
+      },
+      {
+        question: "안개는 주로 어떤 조건에서 발생하나요?",
+        options: ["고온과 습도높음", "강한바람과 습도높음", "저온과 습도높음"],
+        answer: "저온과 습도높음"
+      }
+    ];
+
+    // 날씨 검색 함수: 입력한 도시명으로 API 호출
+    function searchWeather() {
+      const city = document.getElementById('cityInput').value; // 도시명 가져오기
+
+      if (!city) {
+        alert('도시명을 입력해주세요.');
+        return;
+      }
+
+      // OpenWeatherMap API 호출 URL (한글 설명 포함, 섭씨 단위)
+      const apiUrl = `https://api.openweathermap.org/data/2.5/weather?q=${city}&appid=${API_KEY}&units=metric&lang=kr`;
+
+      fetch(apiUrl)
+        .then(response => {
+          if (!response.ok) {
+            // 도시명이 틀리거나 데이터 없을 때 에러 처리
+            throw new Error('City not found');
+          }
+          return response.json();
+        })
+        .then(data => {
+          displayWeather(data);             // 날씨 정보 화면에 표시
+          document.getElementById('quizBtn').disabled = false; // 퀴즈 버튼 활성화
+        })
+        .catch(error => {
+          console.error('Error fetching weather data:', error);
+          // 오류 메시지 화면에 출력
+          document.getElementById('weather').innerHTML = `<p>${error.message}</p>`;
+        });
+    }
+
+    // 검색 버튼 클릭 시 날씨 검색 함수 실행 ㄱ
+    document.getElementById('searchBtn').addEventListener('click', searchWeather);
+
+    // 입력창에서 Enter 키입력 시 날씨 검색 함수 실행 ㄱ
+    document.getElementById('cityInput').addEventListener('keydown', (event) => {
+      if (event.key === 'Enter') {
+        searchWeather();
+      }
+    });
+
+    // 퀴즈 영역 표시/숨김 토글 함수
+    function toggleQuiz() {
+      const quizDiv = document.getElementById('quiz');
+
+      if (quizDiv.style.display === 'none' || quizDiv.style.display === '') {
+        quizDiv.style.display = 'block';  // 퀴즈 보이기
+        displayRandomQuiz();               // 랜덤 퀴즈 보여주기
+      } else {
+        quizDiv.style.display = 'none';   // 퀴즈 숨기기
+        quizDiv.innerHTML = '';            // 퀴즈 내용 초기화
+      }
+    }
+
+    // 무작위 퀴즈를 화면에 표시하는 함수
+    function displayRandomQuiz() {
+      const quizDiv = document.getElementById('quiz');
+      const randomIndex = Math.floor(Math.random() * quizzes.length); // 랜덤 인덱스 선택
+      const randomQuiz = quizzes[randomIndex];                         // 선택한 퀴즈 객체
+
+      // 퀴즈 문제와 선택지를 버튼 형태로 생성
+      quizDiv.innerHTML = `
+        <h3>Quiz Time!</h3>
+        <p>${randomQuiz.question}</p>
+        <div id="quizOptions">
+          ${randomQuiz.options.map((option, index) => `
+            <button onclick="checkAnswer('${option}', '${randomQuiz.answer}', this)">${index + 1}. ${option}</button>
+          `).join('')}
+        </div>
+        <p id="quizResult"></p>
+      `;
+    }
+
+    // 퀴즈 정답 확인 함수
+    function checkAnswer(selectedOption, correctAnswer, button) {
+      const resultDiv = document.getElementById('quizResult');
+
+      if (selectedOption === correctAnswer) {
+        resultDiv.textContent = "정답입니다! 🎉";
+        resultDiv.style.color = "green";
+      } else {
+        resultDiv.textContent = "오답입니다. 다시 시도해보세요! ❌";
+        resultDiv.style.color = "red";
+      }
+
+      // 모든 선택지 버튼 비활성화 (답변 후 중복 선택 방지)
+      const buttons = document.querySelectorAll("#quizOptions button");
+      buttons.forEach(btn => btn.disabled = true);
+    }
+
+    // 퀴즈 버튼 클릭 시 퀴즈 토글 함수 실행
+    document.getElementById('quizBtn').addEventListener('click', toggleQuiz);
+
+    // API로부터 받은 날씨 데이터를 화면에 표시하는 함수
+    function displayWeather(data) {
+      const weatherDiv = document.getElementById('weather');
+      const temp = data.main.temp;           // 현재 온도(섭씨)
+      const windSpeed = data.wind.speed;    // 풍속 (m/s)
+
+      // 온도별 맞춤 메시지 설정
+      let tempMessage = '';
+      if (temp <= 0) {
+        tempMessage = '너무 추우니 따뜻한 옷을 꼭 입으세요!';
+      } else if (temp <= 10) {
+        tempMessage = '쌀쌀한 날씨입니다. 겉옷을 챙기세요.';
+      } else if (temp <= 20) {
+        tempMessage = '적당히 선선한 날씨네요. 외출하기 좋겠어요!';
+      } else if (temp <= 30) {
+        tempMessage = '따뜻한 날씨입니다. 가벼운 옷차림도 괜찮아요.';
+      } else {
+        tempMessage = '더운 날씨입니다. 충분한 수분 섭취와 야외활동을 자제해주세요.';
+      }
+
+      // 날씨 정보 HTML로 작성하여 화면에 표시
+      weatherDiv.innerHTML = `
+        <h2>${data.name}</h2>
+        <p>온도: ${temp}°C</p>
+        <p>날씨: ${data.weather[0].description}</p>
+        <p>습도: ${data.main.humidity}%</p>
+        <p>풍속: ${windSpeed} m/s</p>
+        <img src="https://openweathermap.org/img/wn/${data.weather[0].icon}@2x.png" alt="Weather icon">
+        <p><strong>${tempMessage}</strong></p>
+      `;
+    }
+  </script>
+</body>
+
+</html>
