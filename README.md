@@ -1,0 +1,1 @@
+사용자는 OpenWeatherMap API 키를 발급받아 const API_KEY = "발급받은 키";로 넣어야 한다
